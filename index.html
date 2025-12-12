@@ -1,0 +1,2019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Custody Calendar — 2-2-5-5 + Swaps + Custom Events</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-panel: #111827;
+      --bg-panel-soft: #020617;
+      --accent: #38bdf8;
+      --accent-soft: #0f172a;
+      --border-subtle: #1f2937;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+      --chase: #bfdbfe;
+      --clair: #fecaca;
+      --tag-bg: #111827;
+      --tag-border: #1f2937;
+      --custom-block: #facc15; /* yellow custom */
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 55%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 16px;
+    }
+
+    /* ===== Auth overlay ===== */
+    .auth-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top, #020617 0, #000 60%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .auth-card {
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 18px;
+      border: 1px solid var(--border-subtle);
+      box-shadow:
+        0 25px 50px -20px rgba(15, 23, 42, 0.95),
+        0 0 0 1px rgba(148, 163, 184, 0.08);
+      max-width: 360px;
+      width: 100%;
+      padding: 22px 20px 18px;
+    }
+
+    .auth-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .auth-title-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #38bdf8, #0ea5e9 40%, #111827);
+      box-shadow:
+        0 0 0 1px rgba(56, 189, 248, 0.5),
+        0 0 18px rgba(56, 189, 248, 0.5);
+    }
+
+    .auth-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .auth-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .auth-input {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-panel-soft);
+      color: var(--text-main);
+      font-size: 0.85rem;
+      padding: 7px 9px;
+      outline: none;
+      margin-bottom: 10px;
+    }
+
+    .auth-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4);
+    }
+
+    .auth-button {
+      width: 100%;
+      border-radius: 999px;
+      border: 1px solid rgba(56, 189, 248, 0.9);
+      background: radial-gradient(circle at top left, #0284c7, #0f172a);
+      color: var(--text-main);
+      padding: 7px 12px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .auth-error {
+      font-size: 0.75rem;
+      color: var(--danger);
+      min-height: 1em;
+      margin-top: 4px;
+    }
+
+    .auth-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    /* ===== App shell ===== */
+
+    .app-shell {
+      max-width: 1200px;
+      width: 100%;
+      background: linear-gradient(145deg, #020617 0, #020617 60%, #030712 100%);
+      border-radius: 18px;
+      border: 1px solid #1f2937;
+      box-shadow:
+        0 25px 50px -20px rgba(15, 23, 42, 0.95),
+        0 0 0 1px rgba(148, 163, 184, 0.05);
+      display: grid;
+      grid-template-columns: minmax(260px, 320px) 1fr;
+      overflow: hidden;
+    }
+
+    @media (max-width: 900px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .side-panel {
+      padding: 18px 18px 16px;
+      border-right: 1px solid var(--border-subtle);
+      background: radial-gradient(circle at top left, #020617 0, #020617 60%);
+    }
+
+    @media (max-width: 900px) {
+      .side-panel {
+        border-right: none;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+    }
+
+    .main-panel {
+      padding: 18px 18px 16px;
+    }
+
+    h1 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 0 0 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h1 span.logo-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #38bdf8, #0ea5e9 40%, #111827);
+      box-shadow:
+        0 0 0 1px rgba(56, 189, 248, 0.5),
+        0 0 18px rgba(56, 189, 248, 0.5);
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+
+    .controls-group {
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      padding: 12px 12px 10px;
+      margin-bottom: 12px;
+    }
+
+    .controls-group h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin: 0 0 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .inline-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .inline-controls .field {
+      flex: 1;
+    }
+
+    label {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+
+    select,
+    input[type="date"],
+    input[type="text"] {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-panel-soft);
+      color: var(--text-main);
+      font-size: 0.8rem;
+      padding: 6px 8px;
+      outline: none;
+    }
+
+    select:focus,
+    input[type="date"]:focus,
+    input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.4);
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      background: radial-gradient(circle at top left, #0f172a, #020617);
+      color: var(--text-main);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      border-color: rgba(56, 189, 248, 0.9);
+      background: radial-gradient(circle at top left, #0284c7, #0f172a);
+    }
+
+    .btn-ghost {
+      border-style: dashed;
+      border-color: rgba(148, 163, 184, 0.4);
+      background: transparent;
+      color: var(--text-muted);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .pill {
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      padding: 3px 8px;
+      font-size: 0.7rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+    }
+
+    .pill-chip {
+      width: 16px;
+      height: 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.45);
+    }
+
+    .pill-chip.chase {
+      background: var(--chase);
+    }
+
+    .pill-chip.clair {
+      background: var(--clair);
+    }
+
+    .pill-label {
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    .small-muted {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .swap-list,
+    .block-list {
+      margin-top: 6px;
+      max-height: 140px;
+      overflow: hidden auto;
+      padding-right: 4px;
+    }
+
+    .swap-item,
+    .block-item {
+      font-size: 0.76rem;
+      padding: 4px 0;
+      border-bottom: 1px dashed rgba(31, 41, 55, 0.8);
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .swap-item:last-child,
+    .block-item:last-child {
+      border-bottom: none;
+    }
+
+    .swap-item span.date,
+    .block-item span.date {
+      color: var(--text-main);
+      font-weight: 500;
+    }
+
+    .swap-item span.parent,
+    .block-item span.parent {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+    }
+
+    .swap-item button,
+    .block-item button {
+      border: none;
+      background: transparent;
+      color: var(--danger);
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      gap: 8px;
+    }
+
+    .calendar-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .calendar-title span.month-year {
+      letter-spacing: 0.03em;
+    }
+
+    .calendar-caption {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .calendar-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .calendar-actions-top {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .print-hint {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      max-width: 220px;
+      text-align: right;
+      line-height: 1.3;
+    }
+
+    .print-hint span.tooltip {
+      border-bottom: 1px dashed rgba(148, 163, 184, 0.7);
+      cursor: help;
+    }
+
+    .calendar-container {
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 14px;
+      border: 1px solid var(--border-subtle);
+      padding: 10px 10px 12px;
+    }
+
+    .weekday-row {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 2px;
+      margin-bottom: 4px;
+    }
+
+    .weekday {
+      text-align: center;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding: 4px 0;
+      color: var(--text-muted);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 2px;
+    }
+
+    .day-cell {
+      position: relative;
+      min-height: 70px;
+      border-radius: 10px;
+      padding: 4px 5px 4px;
+      background: #020617;
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+    }
+
+    .day-cell.out-of-month {
+      opacity: 0.22;
+      background: #020617;
+      cursor: default;
+    }
+
+    .day-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+
+    .day-number {
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .day-parent-tag {
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(15, 23, 42, 0.85);
+      color: rgba(15, 23, 42, 0.9);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .day-parent-tag.chase {
+      color: #1d4ed8;
+    }
+
+    .day-parent-tag.clair {
+      color: #b91c1c;
+    }
+
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      margin-top: 2px;
+    }
+
+    .badge {
+      font-size: 0.62rem;
+      padding: 1px 5px;
+      border-radius: 999px;
+      background: var(--tag-bg);
+      border: 1px solid var(--tag-border);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    .badge.swap {
+      border-style: dashed;
+      color: #f97316;
+    }
+
+    .note-text {
+      margin-top: 3px;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+
+    .footer-note {
+      margin-top: 10px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    #yearStats {
+      margin-top: 4px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    #yearPrintContainer {
+      display: none;
+      margin-top: 10px;
+    }
+
+    .print-page {
+      page-break-after: always;
+      background: #ffffff;
+      color: #000000;
+      padding: 0.6in;
+    }
+
+    .print-summary-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .print-summary-subtitle {
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+    }
+
+    .print-summary-section-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-top: 10px;
+      margin-bottom: 4px;
+    }
+
+    .print-summary-text {
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+    }
+
+    .print-summary-list {
+      font-size: 0.85rem;
+      margin: 4px 0 0 16px;
+      padding: 0;
+    }
+
+    .print-summary-list li {
+      margin-bottom: 2px;
+    }
+
+    .print-summary-key {
+      font-size: 0.8rem;
+      margin-top: 10px;
+    }
+
+    .print-month-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .print-month-caption {
+      font-size: 0.8rem;
+      color: #4b5563;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .print-month-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      font-size: 0.7rem;
+      text-align: center;
+      color: #4b5563;
+      margin-bottom: 4px;
+    }
+
+    .print-month-weekdays > div {
+      padding: 4px 0;
+      border-bottom: 1px solid #9ca3af;
+    }
+
+    .print-month-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      grid-auto-rows: 1fr;
+      border: 1px solid #9ca3af;
+      border-top: none;
+    }
+
+    .print-day-cell {
+      min-height: 80px;
+      border-right: 1px solid #9ca3af;
+      border-bottom: 1px solid #9ca3af;
+      padding: 3px 4px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      font-size: 0.75rem;
+    }
+
+    .print-day-cell:nth-child(7n) {
+      border-right: none;
+    }
+
+    .print-day-cell.out-of-month {
+      background: #f9fafb;
+      color: #9ca3af;
+    }
+
+    .print-day-number {
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .print-day-parent {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      padding: 1px 4px;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.3);
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .print-day-labels {
+      margin-top: auto;
+      font-size: 0.6rem;
+    }
+
+    .print-label-chip {
+      display: inline-block;
+      border-radius: 999px;
+      border: 1px solid #6b7280;
+      padding: 0 4px;
+      margin: 1px 2px 0 0;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .print-label-chip.swap {
+      border-style: dashed;
+      color: #b45309;
+    }
+
+    .print-day-note {
+      font-size: 0.6rem;
+      margin-top: 2px;
+      color: #374151;
+    }
+
+    @page {
+      size: letter landscape;
+      margin: 0.5in;
+    }
+
+    @media print {
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+      }
+
+      /* MONTH export */
+      body[data-print-mode="month"] .app-shell {
+        max-width: 100%;
+        width: 100%;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+        grid-template-columns: 1fr;
+        background: #ffffff !important;
+      }
+      body[data-print-mode="month"] .side-panel {
+        display: none !important;
+      }
+      body[data-print-mode="month"] .main-panel {
+        padding: 0.5in;
+      }
+      body[data-print-mode="month"] .calendar-container {
+        background: #ffffff !important;
+        border-color: #9ca3af;
+      }
+      body[data-print-mode="month"] #yearPrintContainer {
+        display: none !important;
+      }
+      body[data-print-mode="month"] #authOverlay {
+        display: none !important;
+      }
+
+      /* YEAR export */
+      body[data-print-mode="year"] .side-panel {
+        display: none !important;
+      }
+      body[data-print-mode="year"] .calendar-container {
+        display: none !important;
+      }
+      body[data-print-mode="year"] .main-panel {
+        padding: 0;
+      }
+      body[data-print-mode="year"] .app-shell {
+        max-width: 100%;
+        width: 100%;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+        grid-template-columns: 1fr;
+        background: #ffffff !important;
+      }
+      body[data-print-mode="year"] #yearPrintContainer {
+        display: block !important;
+      }
+      body[data-print-mode="year"] #authOverlay {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Auth overlay -->
+  <div id="authOverlay" class="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-title">
+        <span class="auth-title-dot"></span>
+        Custody Calendar Access
+      </div>
+      <div class="auth-subtitle">
+        This page is protected. Enter the shared password to view and edit the calendar.
+      </div>
+      <label for="authPassword" class="auth-label">Password</label>
+      <input
+        type="password"
+        id="authPassword"
+        class="auth-input"
+        autocomplete="current-password"
+      />
+      <button id="authSubmit" class="auth-button" type="button">
+        Unlock
+      </button>
+      <div id="authError" class="auth-error"></div>
+      <div class="auth-hint">
+        This is a light, front-end-only gate — not bank-grade security. For real access control,
+        put this behind Netlify/Cloudflare or similar.
+      </div>
+    </div>
+  </div>
+
+  <div id="appShell" class="app-shell" style="display:none;">
+    <aside class="side-panel">
+      <h1>
+        <span class="logo-dot"></span>
+        Custody Calendar Engine
+      </h1>
+      <div class="subtitle">
+        2-2-5-5 rotation · Clair Mon–Tue, Chase Wed–Thu, alternating weekends ·
+        holiday overrides + track-outs + swaps + custom events.
+      </div>
+
+      <div class="controls-group">
+        <h2>
+          View
+          <span class="small-muted">Pick a year & month</span>
+        </h2>
+        <div class="inline-controls">
+          <div class="field">
+            <label for="yearSelect">Year</label>
+            <select id="yearSelect"></select>
+          </div>
+          <div class="field">
+            <label for="monthSelect">Month</label>
+            <select id="monthSelect"></select>
+          </div>
+        </div>
+        <button class="btn btn-ghost" id="todayBtn" type="button">
+          Jump to current month
+        </button>
+
+        <div class="legend-row" style="margin-top:10px;">
+          <div class="pill">
+            <span class="pill-chip chase"></span>
+            <span class="pill-label">Chase</span>
+          </div>
+          <div class="pill">
+            <span class="pill-chip clair"></span>
+            <span class="pill-label">Clair</span>
+          </div>
+        </div>
+        <div class="small-muted" style="margin-top:4px;">
+          HAL = Halloween, TG = Thanksgiving, XMAS = Christmas block,
+          TO = Track-out, Camping = special block. “(swap)” = one-time trade.
+          Custom events are highlighted in yellow.
+        </div>
+      </div>
+
+      <div class="controls-group">
+        <h2>
+          Add Swap
+          <span class="small-muted">Override 2-2-5-5 for a date</span>
+        </h2>
+        <div class="field" style="margin-bottom:6px;">
+          <label for="swapDate">Date</label>
+          <input type="date" id="swapDate" />
+        </div>
+        <div class="inline-controls">
+          <div class="field">
+            <label for="swapParent">Parent</label>
+            <select id="swapParent">
+              <option value="Chase">Chase</option>
+              <option value="Clair">Clair</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" style="align-self:flex-end" id="addSwapBtn" type="button">
+            + Add Swap
+          </button>
+        </div>
+        <button class="btn btn-ghost" style="margin-top:6px;" id="clearSwapsBtn" type="button">
+          Clear all swaps (current year)
+        </button>
+
+        <button class="btn btn-primary" style="margin-top:8px;width:100%;" id="saveDataBtn" type="button">
+          Save data to JSON file
+        </button>
+        <div class="small-muted" style="margin-top:4px;">
+          This downloads <code>custody-calendar-state.json</code>. Put it next
+          to this HTML in your repo and commit it so other machines load the
+          same data.
+        </div>
+
+        <div class="small-muted" style="margin-top:8px;">
+          Swaps override the base schedule and any holiday or track-out block
+          for that specific date.
+        </div>
+
+        <div class="swap-list" id="swapList"></div>
+      </div>
+
+      <div class="controls-group">
+        <h2>
+          Custom Events / Blocks
+          <span class="small-muted">Track-outs, trips, etc.</span>
+        </h2>
+        <div class="inline-controls">
+          <div class="field">
+            <label for="blockStart">Start</label>
+            <input type="date" id="blockStart" />
+          </div>
+          <div class="field">
+            <label for="blockEnd">End</label>
+            <input type="date" id="blockEnd" />
+          </div>
+        </div>
+        <div class="inline-controls">
+          <div class="field">
+            <label for="blockLabel">Label</label>
+            <input
+              type="text"
+              id="blockLabel"
+              placeholder="e.g., TO, Track-out, Beach"
+            />
+          </div>
+          <div class="field">
+            <label for="blockParent">Parent</label>
+            <select id="blockParent">
+              <option value="info">Info only</option>
+              <option value="Chase">Chase</option>
+              <option value="Clair">Clair</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:6px;width:100%;" id="addBlockBtn" type="button">
+          + Add Custom Block (current year)
+        </button>
+        <div class="small-muted" style="margin-top:4px;">
+          • Leave parent as “Info only” to just tag the days (e.g., Track-out).<br/>
+          • To override custody for the block, choose Chase or Clair.<br/>
+          • Days with any custom block are highlighted in yellow.
+        </div>
+        <div class="block-list" id="blockList"></div>
+      </div>
+    </aside>
+
+    <main class="main-panel">
+      <div class="calendar-header">
+        <div>
+          <div class="calendar-title">
+            <span class="month-year" id="calendarTitle">Month Year</span>
+          </div>
+          <div class="calendar-caption" id="calendarCaption"></div>
+        </div>
+        <div class="calendar-actions">
+          <div class="calendar-actions-top">
+            <button class="btn btn-primary" id="printMonthBtn" type="button">
+              Export Month PDF
+            </button>
+            <button class="btn btn-primary" id="printYearBtn" type="button">
+              Export Year PDF
+            </button>
+          </div>
+          <div class="print-hint">
+            <span
+              class="tooltip"
+              title="In most browsers (Chrome/Edge): when the Print dialog opens, click &quot;More settings&quot; and turn on &quot;Print background graphics&quot; so the Chase/Clair/yellow colors show up in the PDF."
+            >
+              Tip: enable “Print background graphics” in your browser’s print
+              settings so the blue/pink/yellow colors show in the PDF.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="calendar-container">
+        <div class="weekday-row" id="weekdayRow">
+          <div class="weekday">Sun</div>
+          <div class="weekday">Mon</div>
+          <div class="weekday">Tue</div>
+          <div class="weekday">Wed</div>
+          <div class="weekday">Thu</div>
+          <div class="weekday">Fri</div>
+          <div class="weekday">Sat</div>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="footer-note">
+          Base 2-2-5-5 rotation anchored to Monday 2022-06-27. Colors show the
+          final parent after applying holiday blocks, track-outs, special
+          blocks, custom events (yellow), and swaps.
+          Click a day block to set the swap/custom dates, or
+          <b>double-click a day to toggle who has it</b>.
+        </div>
+        <div id="yearStats"></div>
+      </div>
+
+      <div id="yearPrintContainer"></div>
+    </main>
+  </div>
+
+  <script>
+    // ===== Simple front-end password gate =====
+    const APP_PASSWORD = "lemon"; // ← CHANGE THIS to your real password
+    const AUTH_KEY = "custodyCalendarAuth_v1";
+
+    const authOverlay = document.getElementById("authOverlay");
+    const appShell = document.getElementById("appShell");
+    const authPasswordInput = document.getElementById("authPassword");
+    const authSubmitBtn = document.getElementById("authSubmit");
+    const authError = document.getElementById("authError");
+
+    function isAuthed() {
+      return localStorage.getItem(AUTH_KEY) === "ok";
+    }
+
+    function showApp() {
+      authOverlay.style.display = "none";
+      appShell.style.display = "grid";
+    }
+
+    function showAuth() {
+      authOverlay.style.display = "flex";
+      appShell.style.display = "none";
+      authPasswordInput.value = "";
+      authError.textContent = "";
+      setTimeout(() => authPasswordInput.focus(), 50);
+    }
+
+    function handleAuthSubmit() {
+      const val = authPasswordInput.value || "";
+      if (val === APP_PASSWORD) {
+        localStorage.setItem(AUTH_KEY, "ok");
+        showApp();
+        bootstrap(); // init calendar app after auth
+      } else {
+        authError.textContent = "Incorrect password. Please try again.";
+      }
+    }
+
+    authSubmitBtn.addEventListener("click", handleAuthSubmit);
+    authPasswordInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        handleAuthSubmit();
+      }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      if (isAuthed()) {
+        showApp();
+        bootstrap();
+      } else {
+        showAuth();
+      }
+    });
+
+    // ===== Calendar app (unchanged logic, just wrapped in bootstrap) =====
+
+    const PLAINTIFF = "Chase";
+    const DEFENDANT = "Clair";
+    const REF_MONDAY = new Date(2022, 5, 27); // 2022-06-27
+    const STORAGE_KEY = "custodyCalendarState_v1";
+
+    function stripTime(d) {
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+    function daysBetween(a, b) {
+      const ms = stripTime(a) - stripTime(b);
+      return Math.round(ms / (1000 * 60 * 60 * 24));
+    }
+    function twoTwoFiveFiveParent(d) {
+      const jsDow = d.getDay();
+      const dow = (jsDow + 6) % 7; // convert Sun=0 -> Mon=0
+      const mondayThisWeek = new Date(d);
+      mondayThisWeek.setDate(d.getDate() - dow);
+      const weekIndex = Math.floor(daysBetween(mondayThisWeek, REF_MONDAY) / 7);
+      const isWeek1 = weekIndex % 2 === 0;
+      if (dow === 0 || dow === 1) return DEFENDANT; // Mon/Tue
+      if (dow === 2 || dow === 3) return PLAINTIFF; // Wed/Thu
+      return isWeek1 ? PLAINTIFF : DEFENDANT;       // Fri–Sun
+    }
+    function isoDate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+    function makeDate(y, m, d) {
+      return new Date(y, m - 1, d);
+    }
+
+    class Block {
+      constructor(name, start, end, parent, label) {
+        this.name = name;
+        this.start = start; // inclusive
+        this.end = end;     // exclusive
+        this.parent = parent; // null => info-only
+        this.label = label;
+      }
+    }
+
+    function holidayBlocks(year) {
+      const blocks = [];
+
+      // Halloween (Oct 31), alternates: even->Chase, odd->Clair
+      const halParent = year % 2 === 0 ? PLAINTIFF : DEFENDANT;
+      blocks.push(
+        new Block("Halloween", makeDate(year, 10, 31), makeDate(year, 11, 1), halParent, "HAL")
+      );
+
+      // Thanksgiving, fixed window Nov 26–Dec 1, alternates by year
+      const tgParent = year % 2 === 0 ? PLAINTIFF : DEFENDANT;
+      blocks.push(
+        new Block("Thanksgiving", makeDate(year, 11, 26), makeDate(year, 12, 1), tgParent, "TG")
+      );
+
+      // Christmas / Winter break split:
+      // Even year: Clair 12/18–12/25, Chase 12/25–Jan 4
+      // Odd year:  Chase 12/19–12/25, Clair 12/25–Jan 5
+      if (year % 2 === 0) {
+        blocks.push(
+          new Block("XMAS-1", makeDate(year, 12, 18), makeDate(year, 12, 25), DEFENDANT, "XMAS")
+        );
+        blocks.push(
+          new Block("XMAS-2", makeDate(year, 12, 25), makeDate(year + 1, 1, 4), PLAINTIFF, "XMAS")
+        );
+      } else {
+        blocks.push(
+          new Block("XMAS-1", makeDate(year, 12, 19), makeDate(year, 12, 25), PLAINTIFF, "XMAS")
+        );
+        blocks.push(
+          new Block("XMAS-2", makeDate(year, 12, 25), makeDate(year + 1, 1, 5), DEFENDANT, "XMAS")
+        );
+      }
+
+      return blocks;
+    }
+
+    const CONFIG = {
+      2025: {
+        trackouts: [
+          // Fall 2025 Track 3 out (kids back Nov 12)
+          new Block("Track-out", makeDate(2025, 10, 27), makeDate(2025, 11, 12), null, "TO"),
+          // Track 3 Winter Break: Dec 22, 2025 – Jan 2, 2026 (end exclusive -> Jan 3)
+          new Block("Winter Break", makeDate(2025, 12, 22), makeDate(2026, 1, 3), null, "TO"),
+        ],
+        swaps: {
+          "2025-10-14": PLAINTIFF,
+          "2025-10-19": DEFENDANT,
+        },
+        notes: {},
+        extraBlocks: [
+          new Block("Camping", makeDate(2025, 10, 24), makeDate(2025, 10, 28), PLAINTIFF, "Camping"),
+        ],
+      },
+      2026: {
+        trackouts: [
+          // Winter break continuation: Jan 1–2 2026 show TO in 2026 January view
+          new Block("Winter Break (cont)", makeDate(2026, 1, 1), makeDate(2026, 1, 3), null, "TO"),
+
+          // Jan–Feb 2026 Track 3 track-out
+          new Block("Track-out", makeDate(2026, 1, 26), makeDate(2026, 2, 14), null, "TO"),
+
+          // Apr–May 2026 Track 3 track-out
+          new Block("Track-out", makeDate(2026, 4, 20), makeDate(2026, 5, 9), null, "TO"),
+        ],
+        swaps: {},
+        notes: { "2026-04-20": "Dentist" },
+        extraBlocks: [],
+      },
+      2027: { trackouts: [], swaps: {}, notes: {}, extraBlocks: [] },
+      2028: { trackouts: [], swaps: {}, notes: {}, extraBlocks: [] },
+    };
+
+    function collectBlocks(year) {
+      const conf = CONFIG[year] || {};
+      return [
+        ...holidayBlocks(year),
+        ...(conf.trackouts || []),
+        ...(conf.extraBlocks || []),
+      ];
+    }
+    function swapsFor(year) {
+      const conf = CONFIG[year] || {};
+      return { ...(conf.swaps || {}) };
+    }
+    function notesFor(year) {
+      const conf = CONFIG[year] || {};
+      return { ...(conf.notes || {}) };
+    }
+
+    // Swaps + custom blocks state that can be saved/loaded
+    const userSwapState = {};
+    function getEffectiveSwaps(year) {
+      if (!userSwapState[year]) {
+        userSwapState[year] = swapsFor(year);
+      }
+      return userSwapState[year];
+    }
+
+    const userBlocksState = {};
+    function getUserBlocks(year) {
+      if (!userBlocksState[year]) userBlocksState[year] = [];
+      return userBlocksState[year];
+    }
+
+    const yearSelect = document.getElementById("yearSelect");
+    const monthSelect = document.getElementById("monthSelect");
+    const todayBtn = document.getElementById("todayBtn");
+    const calendarTitle = document.getElementById("calendarTitle");
+    const calendarCaption = document.getElementById("calendarCaption");
+    const calendarGrid = document.getElementById("calendarGrid");
+    const swapDateInput = document.getElementById("swapDate");
+    const swapParentSelect = document.getElementById("swapParent");
+    const addSwapBtn = document.getElementById("addSwapBtn");
+    const clearSwapsBtn = document.getElementById("clearSwapsBtn");
+    const saveDataBtn = document.getElementById("saveDataBtn");
+    const swapListEl = document.getElementById("swapList");
+    const printMonthBtn = document.getElementById("printMonthBtn");
+    const printYearBtn = document.getElementById("printYearBtn");
+    const yearPrintContainer = document.getElementById("yearPrintContainer");
+
+    const blockStartInput = document.getElementById("blockStart");
+    const blockEndInput = document.getElementById("blockEnd");
+    const blockLabelInput = document.getElementById("blockLabel");
+    const blockParentSelect = document.getElementById("blockParent");
+    const addBlockBtn = document.getElementById("addBlockBtn");
+    const blockListEl = document.getElementById("blockList");
+
+    const yearStatsEl = document.getElementById("yearStats");
+
+    const SUPPORTED_YEARS = [2025, 2026, 2027, 2028];
+
+    function initSelectors() {
+      for (const y of SUPPORTED_YEARS) {
+        const opt = document.createElement("option");
+        opt.value = String(y);
+        opt.textContent = String(y);
+        yearSelect.appendChild(opt);
+      }
+      const monthNames = [
+        "January","February","March","April","May","June",
+        "July","August","September","October","November","December",
+      ];
+      monthNames.forEach((name, idx) => {
+        const opt = document.createElement("option");
+        opt.value = String(idx);
+        opt.textContent = name;
+        monthSelect.appendChild(opt);
+      });
+
+      const now = new Date();
+      if (SUPPORTED_YEARS.includes(now.getFullYear())) {
+        yearSelect.value = String(now.getFullYear());
+        monthSelect.value = String(now.getMonth());
+        const todayIso = isoDate(now);
+        swapDateInput.value = todayIso;
+        blockStartInput.value = todayIso;
+        blockEndInput.value = todayIso;
+      } else {
+        yearSelect.value = String(SUPPORTED_YEARS[0]);
+        monthSelect.value = "0";
+        const d = `${SUPPORTED_YEARS[0]}-01-01`;
+        swapDateInput.value = d;
+        blockStartInput.value = d;
+        blockEndInput.value = d;
+      }
+    }
+
+    function applyLoadedState(data) {
+      if (!data || typeof data !== "object") return;
+      if (data.userSwapState && typeof data.userSwapState === "object") {
+        for (const [yearStr, swaps] of Object.entries(data.userSwapState)) {
+          const y = parseInt(yearStr, 10);
+          if (SUPPORTED_YEARS.includes(y) && typeof swaps === "object") {
+            userSwapState[y] = swaps;
+          }
+        }
+      }
+      if (data.userBlocksState && typeof data.userBlocksState === "object") {
+        for (const [yearStr, blocks] of Object.entries(data.userBlocksState)) {
+          const y = parseInt(yearStr, 10);
+          if (SUPPORTED_YEARS.includes(y) && Array.isArray(blocks)) {
+            userBlocksState[y] = blocks.filter(
+              b => b && typeof b.start === "string" && typeof b.end === "string"
+            );
+          }
+        }
+      }
+    }
+
+    async function loadStateFromJson() {
+      try {
+        const res = await fetch("custody-calendar-state.json", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        applyLoadedState(data);
+      } catch (e) {
+        console.warn("Could not load custody-calendar-state.json:", e);
+      }
+    }
+
+    function loadStateFromLocalStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        applyLoadedState(data);
+      } catch (e) {
+        console.warn("Failed to load stored custody calendar state:", e);
+      }
+    }
+
+    function buildStatePayload() {
+      return {
+        userSwapState,
+        userBlocksState,
+      };
+    }
+
+    function saveStateToLocalStorage() {
+      try {
+        const payload = buildStatePayload();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (e) {
+        console.warn("Failed to save custody calendar state:", e);
+      }
+    }
+
+    function downloadStateFile() {
+      try {
+        const payload = buildStatePayload();
+        const blob = new Blob([JSON.stringify(payload, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "custody-calendar-state.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        console.warn("Failed to download custody calendar data:", e);
+        alert("Could not create the data file. See console for details.");
+      }
+    }
+
+    // Build overrides + labels + notes + set of custom days
+    function buildOverridesAndLabels(year) {
+      const blocks = collectBlocks(year);
+      const swaps = getEffectiveSwaps(year);
+      const notes = notesFor(year);
+      const custom = getUserBlocks(year);
+
+      const overrideMap = {};
+      const labelMap = {};
+      const noteMap = {};
+      const customDaySet = new Set();
+
+      const addLabel = (iso, txt) => {
+        if (!labelMap[iso]) labelMap[iso] = new Set();
+        labelMap[iso].add(txt);
+      };
+
+      // holiday, trackout, extraBlocks
+      for (const block of blocks) {
+        let cur = stripTime(block.start);
+        const end = stripTime(block.end);
+        while (cur < end) {
+          const iso = isoDate(cur);
+          if (block.parent) overrideMap[iso] = block.parent;
+          if (block.label) addLabel(iso, block.label);
+          cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 1);
+        }
+      }
+
+      // custom blocks (yellow, optional override)
+      for (const cb of custom) {
+        try {
+          const startDt = stripTime(new Date(cb.start));
+          const endDt = stripTime(new Date(cb.end));
+          let cur = new Date(startDt);
+          const endExclusive = new Date(
+            endDt.getFullYear(),
+            endDt.getMonth(),
+            endDt.getDate() + 1
+          );
+          const label = cb.label && cb.label.trim() ? cb.label.trim() : "EVT";
+          const parent = cb.parent === PLAINTIFF || cb.parent === DEFENDANT ? cb.parent : null;
+
+          while (cur < endExclusive) {
+            const iso = isoDate(cur);
+            customDaySet.add(iso);
+            if (parent) overrideMap[iso] = parent;
+            addLabel(iso, label);
+            cur = new Date(cur.getFullYear(), cur.getMonth(), cur.getDate() + 1);
+          }
+        } catch (e) {
+          console.warn("Bad custom block", cb, e);
+        }
+      }
+
+      // swaps
+      for (const [iso, parent] of Object.entries(swaps)) {
+        overrideMap[iso] = parent;
+        addLabel(iso, "(swap)");
+      }
+
+      // notes
+      for (const [iso, text] of Object.entries(notes)) {
+        noteMap[iso] = text;
+      }
+      return { overrideMap, labelMap, noteMap, customDaySet };
+    }
+
+    // Baseline parent (2-2-5-5 + holidays + custom blocks), WITHOUT swaps
+    function getBaseFinalParentForDate(d) {
+      const year = d.getFullYear();
+      const blocks = collectBlocks(year);
+      const custom = getUserBlocks(year);
+      let parent = twoTwoFiveFiveParent(d);
+
+      for (const block of blocks) {
+        const start = stripTime(block.start);
+        const end = stripTime(block.end);
+        if (d >= start && d < end && block.parent) {
+          parent = block.parent;
+        }
+      }
+
+      for (const cb of custom) {
+        try {
+          const startDt = stripTime(new Date(cb.start));
+          const endDt = stripTime(new Date(cb.end));
+          if (d >= startDt && d <= endDt) {
+            if (cb.parent === PLAINTIFF || cb.parent === DEFENDANT) {
+              parent = cb.parent;
+            }
+          }
+        } catch (e) {
+          console.warn("Bad custom block when computing baseline", cb, e);
+        }
+      }
+
+      return parent;
+    }
+
+    // Count how many days in a year belong to each parent (final schedule)
+    function computeYearStats(year, overrideMap) {
+      let chase = 0;
+      let clair = 0;
+      let d = new Date(year, 0, 1);
+      const end = new Date(year, 11, 31);
+
+      while (d <= end) {
+        const iso = isoDate(d);
+        const baseParent = twoTwoFiveFiveParent(d);
+        const finalParent = overrideMap[iso] || baseParent;
+
+        if (finalParent === PLAINTIFF) chase++;
+        else if (finalParent === DEFENDANT) clair++;
+
+        d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+      }
+
+      return { chase, clair, total: chase + clair };
+    }
+
+    function renderCalendar() {
+      const year = parseInt(yearSelect.value, 10);
+      const monthIndex = parseInt(monthSelect.value, 10);
+      const monthNames = [
+        "January","February","March","April","May","June",
+        "July","August","September","October","November","December",
+      ];
+      calendarTitle.textContent = `${monthNames[monthIndex]} ${year}`;
+      calendarCaption.textContent =
+        "Holiday blocks, track-outs, custom events, and swaps applied.";
+
+      const { overrideMap, labelMap, noteMap, customDaySet } = buildOverridesAndLabels(year);
+      calendarGrid.innerHTML = "";
+
+      const first = new Date(year, monthIndex, 1);
+      const last = new Date(year, monthIndex + 1, 0);
+      const firstDow = first.getDay();
+      const totalCells = 42;
+
+      for (let i = 0; i < totalCells; i++) {
+        const cell = document.createElement("div");
+        cell.className = "day-cell";
+
+        const dayNum = i - firstDow + 1;
+        const d = new Date(year, monthIndex, dayNum);
+        const inMonth =
+          dayNum >= 1 &&
+          d.getMonth() === monthIndex &&
+          d.getFullYear() === year &&
+          d <= last;
+
+        const header = document.createElement("div");
+        header.className = "day-header";
+
+        const numSpan = document.createElement("div");
+        numSpan.className = "day-number";
+
+        const parentTag = document.createElement("div");
+        parentTag.className = "day-parent-tag";
+
+        const badgeRow = document.createElement("div");
+        badgeRow.className = "badge-row";
+
+        const noteDiv = document.createElement("div");
+        noteDiv.className = "note-text";
+
+        if (!inMonth) {
+          cell.classList.add("out-of-month");
+          numSpan.textContent = d.getDate();
+        } else {
+          const iso = isoDate(d);
+          const baseParent = twoTwoFiveFiveParent(d);
+          const finalParent = overrideMap[iso] || baseParent;
+
+          let bgColor = finalParent === PLAINTIFF ? "var(--chase)" : "var(--clair)";
+          if (customDaySet.has(iso)) {
+            bgColor = "var(--custom-block)";
+          }
+          cell.style.background = bgColor;
+          cell.dataset.iso = iso;
+
+          numSpan.textContent = d.getDate();
+          parentTag.textContent = finalParent;
+          parentTag.classList.add(finalParent === PLAINTIFF ? "chase" : "clair");
+
+          const labels = labelMap[iso] ? Array.from(labelMap[iso]).sort() : [];
+          for (const lbl of labels) {
+            const badge = document.createElement("span");
+            badge.className = "badge" + (lbl === "(swap)" ? " swap" : "");
+            badge.textContent = lbl;
+            badgeRow.appendChild(badge);
+          }
+          if (noteMap[iso]) noteDiv.textContent = noteMap[iso];
+        }
+
+        header.appendChild(numSpan);
+        if (inMonth) header.appendChild(parentTag);
+        cell.appendChild(header);
+        if (badgeRow.childNodes.length > 0) cell.appendChild(badgeRow);
+        if (noteDiv.textContent) cell.appendChild(noteDiv);
+        calendarGrid.appendChild(cell);
+      }
+
+      // Year totals in UI only
+      const stats = computeYearStats(year, overrideMap);
+      yearStatsEl.textContent =
+        `Year totals (${year}): Chase ${stats.chase} days, ` +
+        `Clair ${stats.clair} days (total ${stats.total} days counted).`;
+
+      renderSwapList();
+      renderBlockList();
+      saveStateToLocalStorage();
+    }
+
+    function renderSwapList() {
+      const year = parseInt(yearSelect.value, 10);
+      const swaps = getEffectiveSwaps(year);
+      swapListEl.innerHTML = "";
+
+      const entries = Object.entries(swaps).sort(([a], [b]) => a.localeCompare(b));
+      if (entries.length === 0) {
+        swapListEl.innerHTML =
+          '<div class="small-muted">No swaps for this year yet.</div>';
+        return;
+      }
+      for (const [iso, parent] of entries) {
+        const item = document.createElement("div");
+        item.className = "swap-item";
+
+        const left = document.createElement("div");
+        const dateSpan = document.createElement("span");
+        dateSpan.className = "date";
+        dateSpan.textContent = iso;
+
+        const descSpan = document.createElement("span");
+        descSpan.className = "small-muted";
+        descSpan.textContent = " assigned to ";
+
+        const parentSpan = document.createElement("span");
+        parentSpan.className = "parent";
+        parentSpan.textContent = parent;
+
+        left.appendChild(dateSpan);
+        left.appendChild(descSpan);
+        left.appendChild(parentSpan);
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = "×";
+        btn.title = "Remove swap";
+        btn.addEventListener("click", () => {
+          delete swaps[iso];
+          renderCalendar();
+        });
+
+        item.appendChild(left);
+        item.appendChild(btn);
+        swapListEl.appendChild(item);
+      }
+    }
+
+    function renderBlockList() {
+      const year = parseInt(yearSelect.value, 10);
+      const blocks = getUserBlocks(year);
+      blockListEl.innerHTML = "";
+
+      if (!blocks.length) {
+        blockListEl.innerHTML =
+          '<div class="small-muted">No custom blocks for this year yet.</div>';
+        return;
+      }
+
+      blocks.forEach((b, idx) => {
+        const item = document.createElement("div");
+        item.className = "block-item";
+
+        const left = document.createElement("div");
+
+        const dateSpan = document.createElement("span");
+        dateSpan.className = "date";
+        dateSpan.textContent =
+          b.start === b.end ? b.start : `${b.start} → ${b.end}`;
+
+        const labelSpan = document.createElement("span");
+        labelSpan.className = "small-muted";
+        labelSpan.textContent = b.label ? ` [${b.label}]` : "";
+
+        const parentSpan = document.createElement("span");
+        parentSpan.className = "parent";
+        parentSpan.textContent =
+          b.parent === PLAINTIFF || b.parent === DEFENDANT
+            ? b.parent
+            : "Info only";
+
+        left.appendChild(dateSpan);
+        left.appendChild(labelSpan);
+        left.appendChild(parentSpan);
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = "×";
+        btn.title = "Remove custom block";
+        btn.addEventListener("click", () => {
+          blocks.splice(idx, 1);
+          renderCalendar();
+        });
+
+        item.appendChild(left);
+        item.appendChild(btn);
+        blockListEl.appendChild(item);
+      });
+    }
+
+    function addSwap() {
+      const dateStr = swapDateInput.value;
+      const parent = swapParentSelect.value;
+      if (!dateStr) return;
+      const parts = dateStr.split("-");
+      const year = Number(parts[0]);
+      if (!SUPPORTED_YEARS.includes(year)) {
+        alert("Swap year must be within: " + SUPPORTED_YEARS.join(", "));
+        return;
+      }
+      if (!userSwapState[year]) userSwapState[year] = swapsFor(year);
+      userSwapState[year][dateStr] = parent;
+      renderCalendar();
+    }
+
+    function clearCurrentYearSwaps() {
+      const year = parseInt(yearSelect.value, 10);
+      userSwapState[year] = {};
+      renderCalendar();
+    }
+
+    function addCustomBlock() {
+      const start = blockStartInput.value;
+      let end = blockEndInput.value || start;
+      const label = blockLabelInput.value.trim();
+      const parentVal = blockParentSelect.value;
+
+      if (!start) {
+        alert("Please select a start date.");
+        return;
+      }
+      if (!end) end = start;
+
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      if (endDate < startDate) {
+        alert("End date cannot be before start date.");
+        return;
+      }
+
+      const year = parseInt(yearSelect.value, 10);
+      if (!SUPPORTED_YEARS.includes(year)) {
+        alert("Year must be within: " + SUPPORTED_YEARS.join(", "));
+        return;
+      }
+
+      const blocks = getUserBlocks(year);
+      blocks.push({
+        start,
+        end,
+        label: label || "EVT",
+        parent: parentVal === "info" ? null : parentVal,
+      });
+
+      renderCalendar();
+    }
+
+    function jumpToToday() {
+      const now = new Date();
+      if (SUPPORTED_YEARS.includes(now.getFullYear())) {
+        yearSelect.value = String(now.getFullYear());
+        monthSelect.value = String(now.getMonth());
+        const todayIso = isoDate(now);
+        swapDateInput.value = todayIso;
+        blockStartInput.value = todayIso;
+        blockEndInput.value = todayIso;
+        renderCalendar();
+      } else {
+        alert(
+          "Today is outside the configured years (" +
+            SUPPORTED_YEARS[0] + "–" +
+            SUPPORTED_YEARS[SUPPORTED_YEARS.length - 1] + ")."
+        );
+      }
+    }
+
+    function buildYearPrintView() {
+      const year = parseInt(yearSelect.value, 10);
+      const { overrideMap, labelMap, noteMap, customDaySet } = buildOverridesAndLabels(year);
+
+      yearPrintContainer.innerHTML = "";
+
+      const monthNames = [
+        "January","February","March","April","May","June",
+        "July","August","September","October","November","December",
+      ];
+
+      // Summary page FIRST (original behavior)
+      const summaryPage = document.createElement("div");
+      summaryPage.className = "print-page";
+      const title = document.createElement("div");
+      title.className = "print-summary-title";
+      title.textContent = `Custody Calendar Packet — ${year}`;
+      summaryPage.appendChild(title);
+
+      const subtitle = document.createElement("div");
+      subtitle.className = "print-summary-subtitle";
+      subtitle.textContent =
+        "Base 2-2-5-5: Clair (Mon–Tue), Chase (Wed–Thu), alternating Fri–Sun.";
+      summaryPage.appendChild(subtitle);
+
+      const sec1Title = document.createElement("div");
+      sec1Title.className = "print-summary-section-title";
+      sec1Title.textContent = "Holiday overrides";
+      summaryPage.appendChild(sec1Title);
+
+      const h1 = document.createElement("div");
+      h1.className = "print-summary-text";
+      h1.textContent =
+        "• Halloween; Thanksgiving (Wed–Sun alternates by year); Christmas/Winter Break split at noon Dec 25.";
+      summaryPage.appendChild(h1);
+
+      const sec2Title = document.createElement("div");
+      sec2Title.className = "print-summary-section-title";
+      sec2Title.textContent = "Track-outs";
+      summaryPage.appendChild(sec2Title);
+
+      const conf = CONFIG[year] || {};
+      if (conf.trackouts && conf.trackouts.length > 0) {
+        const toList = document.createElement("ul");
+        toList.className = "print-summary-list";
+        for (const b of conf.trackouts) {
+          const startStr = b.start.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          });
+          const endInclusive = new Date(
+            b.end.getFullYear(),
+            b.end.getMonth(),
+            b.end.getDate() - 1
+          );
+          const endStr = endInclusive.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          });
+          const li = document.createElement("li");
+          li.textContent = `${b.name}: ${startStr}–${endStr} (TO on calendar).`;
+          toList.appendChild(li);
+        }
+        summaryPage.appendChild(toList);
+      } else {
+        const noTo = document.createElement("div");
+        noTo.className = "print-summary-text";
+        noTo.textContent = "No track-out blocks configured for this year.";
+        summaryPage.appendChild(noTo);
+      }
+
+      const customBlocks = getUserBlocks(year);
+      if (customBlocks.length > 0) {
+        const sec3Title = document.createElement("div");
+        sec3Title.className = "print-summary-section-title";
+        sec3Title.textContent = "Custom events / blocks";
+        summaryPage.appendChild(sec3Title);
+
+        const cbList = document.createElement("ul");
+        cbList.className = "print-summary-list";
+        for (const b of customBlocks) {
+          const li = document.createElement("li");
+          const label = b.label || "EVT";
+          const parentStr =
+            b.parent === PLAINTIFF || b.parent === DEFENDANT
+              ? b.parent
+              : "info only";
+          li.textContent = `${b.start}–${b.end}: ${label} (${parentStr}).`;
+          cbList.appendChild(li);
+        }
+        summaryPage.appendChild(cbList);
+      }
+
+      const key = document.createElement("div");
+      key.className = "print-summary-key";
+      key.textContent =
+        "Color key: blue = Chase, pink = Clair, yellow = custom events. Labels: HAL, TG, XMAS, TO, Camping, custom labels; “(swap)” = one-time trade.";
+      summaryPage.appendChild(key);
+
+      yearPrintContainer.appendChild(summaryPage);
+
+      // Then monthly pages
+      for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+        const page = document.createElement("div");
+        page.className = "print-page";
+
+        const mt = document.createElement("div");
+        mt.className = "print-month-title";
+        mt.textContent = `${monthNames[monthIndex]} ${year}`;
+        page.appendChild(mt);
+
+        const mc = document.createElement("div");
+        mc.className = "print-month-caption";
+        mc.textContent =
+          "Base 2-2-5-5 with holiday overrides, track-outs, custom events, and swaps applied.";
+        page.appendChild(mc);
+
+        const wdRow = document.createElement("div");
+        wdRow.className = "print-month-weekdays";
+        ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(w => {
+          const div = document.createElement("div");
+          div.textContent = w;
+          wdRow.appendChild(div);
+        });
+        page.appendChild(wdRow);
+
+        const grid = document.createElement("div");
+        grid.className = "print-month-grid";
+
+        const first = new Date(year, monthIndex, 1);
+        const last = new Date(year, monthIndex + 1, 0);
+        const firstDow = first.getDay();
+        const totalCells = 42;
+
+        for (let i = 0; i < totalCells; i++) {
+          const cell = document.createElement("div");
+          cell.className = "print-day-cell";
+
+          const dayNum = i - firstDow + 1;
+          const d = new Date(year, monthIndex, dayNum);
+          const inMonth =
+            dayNum >= 1 &&
+            d.getMonth() === monthIndex &&
+            d.getFullYear() === year &&
+            d <= last;
+
+          const num = document.createElement("div");
+          num.className = "print-day-number";
+
+          const parentTag = document.createElement("div");
+          parentTag.className = "print-day-parent";
+
+          const labelsDiv = document.createElement("div");
+          labelsDiv.className = "print-day-labels";
+
+          const noteDiv = document.createElement("div");
+          noteDiv.className = "print-day-note";
+
+          if (!inMonth) {
+            cell.classList.add("out-of-month");
+            num.textContent = d.getDate();
+          } else {
+            const iso = isoDate(d);
+            const baseParent = twoTwoFiveFiveParent(d);
+            const finalParent = overrideMap[iso] || baseParent;
+
+            let bg = finalParent === PLAINTIFF ? "#bfdbfe" : "#fecaca";
+            if (customDaySet.has(iso)) {
+              bg = "#fef9c3";
+            }
+            cell.style.backgroundColor = bg;
+
+            num.textContent = d.getDate();
+            parentTag.textContent = finalParent;
+
+            const labels = labelMap[iso] ? Array.from(labelMap[iso]).sort() : [];
+            if (labels.length > 0) {
+              labels.forEach(lbl => {
+                const chip = document.createElement("span");
+                chip.className = "print-label-chip" + (lbl === "(swap)" ? " swap" : "");
+                chip.textContent = lbl;
+                labelsDiv.appendChild(chip);
+              });
+            }
+
+            if (noteMap[iso]) {
+              noteDiv.textContent = noteMap[iso];
+            }
+          }
+
+          cell.appendChild(num);
+          if (inMonth) cell.appendChild(parentTag);
+          if (labelsDiv.childNodes.length > 0) cell.appendChild(labelsDiv);
+          if (noteDiv.textContent) cell.appendChild(noteDiv);
+
+          grid.appendChild(cell);
+        }
+
+        page.appendChild(grid);
+        yearPrintContainer.appendChild(page);
+      }
+    }
+
+    function exportMonthPDF() {
+      document.body.setAttribute("data-print-mode", "month");
+      window.print();
+      setTimeout(() => document.body.removeAttribute("data-print-mode"), 0);
+    }
+
+    function exportYearPDF() {
+      buildYearPrintView();
+      document.body.setAttribute("data-print-mode", "year");
+      window.print();
+      setTimeout(() => document.body.removeAttribute("data-print-mode"), 0);
+    }
+
+    // click day -> sync form inputs
+    calendarGrid.addEventListener("click", (e) => {
+      const cell = e.target.closest(".day-cell");
+      if (!cell) return;
+      const iso = cell.dataset.iso;
+      if (!iso) return;
+      swapDateInput.value = iso;
+      blockStartInput.value = iso;
+      blockEndInput.value = iso;
+    });
+
+    // double-click day -> smart toggle swap (baseline ↔ other parent)
+    calendarGrid.addEventListener("dblclick", (e) => {
+      const cell = e.target.closest(".day-cell");
+      if (!cell || cell.classList.contains("out-of-month")) return;
+
+      const iso = cell.dataset.iso;
+      if (!iso) return;
+
+      const parts = iso.split("-");
+      if (parts.length !== 3) return;
+      const year = Number(parts[0]);
+      const month = Number(parts[1]);
+      const day = Number(parts[2]);
+
+      if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return;
+      if (!SUPPORTED_YEARS.includes(year)) return;
+
+      const d = new Date(year, month - 1, day);
+
+      const parentTag = cell.querySelector(".day-parent-tag");
+      if (!parentTag) return;
+      const currentParent = parentTag.textContent.trim();
+      if (currentParent !== PLAINTIFF && currentParent !== DEFENDANT) return;
+
+      const baselineParent = getBaseFinalParentForDate(d);
+
+      if (!userSwapState[year]) userSwapState[year] = swapsFor(year);
+      const swaps = userSwapState[year];
+
+      if (currentParent !== baselineParent) {
+        delete swaps[iso];
+      } else {
+        const other = currentParent === PLAINTIFF ? DEFENDANT : PLAINTIFF;
+        swaps[iso] = other;
+      }
+
+      renderCalendar();
+    });
+
+    async function bootstrap() {
+      initSelectors();
+      await loadStateFromJson();
+      loadStateFromLocalStorage();
+      renderCalendar();
+
+      yearSelect.addEventListener("change", () => renderCalendar());
+      monthSelect.addEventListener("change", () => renderCalendar());
+      todayBtn.addEventListener("click", jumpToToday);
+      addSwapBtn.addEventListener("click", addSwap);
+      clearSwapsBtn.addEventListener("click", clearCurrentYearSwaps);
+      saveDataBtn.addEventListener("click", downloadStateFile);
+      printMonthBtn.addEventListener("click", exportMonthPDF);
+      printYearBtn.addEventListener("click", exportYearPDF);
+      addBlockBtn.addEventListener("click", addCustomBlock);
+    }
+  </script>
+</body>
+</html>
